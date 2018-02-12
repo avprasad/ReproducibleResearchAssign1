@@ -1,0 +1,90 @@
+
+```{r }
+---
+title: "Reproducible Research Peer-graded Assignment: Course Project 1"
+author: "Vaidyanatha Prasad"
+date: "February 12, 2018"
+output: html_document
+---
+```{r codeblock1, message=FALSE}
+require(knitr)
+## Attaching package: 'knitr'
+knitr::opts_chunk$set(echo = TRUE)
+require(dplyr)
+## Attaching package: 'dplyr'
+require(lubridate)
+## Attaching package: 'lubridate'
+require(ggplot2)
+##  Attaching package: 'markdown'
+require(markdown)
+## Attaching package: 'ggplot2'
+setwd("C:\\CourseraAssignments\\ReproducibleResearch\\Activity")
+##Download the zip file from the 
+## https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip
+## Unzip the file and place it in the folder Activity 
+Activitydata <- read.csv("activity.csv", header = TRUE, sep = ',', colClasses = c("numeric", "character","integer"))
+Activitydata$date <- ymd(Activitydata$date)
+##Using Dplyr to get the neccessary sub grouping and summarize the result 
+steps <- Activitydata %>%
+  filter(!is.na(steps)) %>%
+  group_by(date) %>%
+  summarize(steps = sum(steps)) %>%
+  print
+##Histogram of the total number of steps taken each day
+ggplot(steps, aes(x = steps)) +
+  geom_histogram( binwidth = 1000) +
+  labs(title = "Histogram of Steps per day", x = "Steps per day", y = "Frequency")
+
+##Mean and median number of steps taken each day
+mean_steps <- mean(steps$steps, na.rm = TRUE)
+median_steps <- median(steps$steps, na.rm = TRUE)
+mean_steps
+median_steps
+
+##Time series plot of the average number of steps taken
+interval <- Activitydata %>%
+  filter(!is.na(steps)) %>%
+  group_by(interval) %>%
+  summarize(steps = mean(steps))
+ggplot(interval, aes(x=interval, y=steps)) +
+  geom_line(color = "black")
+
+##The 5-minute interval that, on average, contains the maximum number of steps
+interval[which.max(interval$steps),]
+
+##Code to describe and show a strategy for imputing missing data
+data_full <- Activitydata
+nas <- is.na(data_full$steps)
+## Identify the mean/average for that day
+## Create new dataset that is equal to the original dataset but with the missing data filled in
+avg_interval <- tapply(data_full$steps, data_full$interval, mean, na.rm=TRUE, simplify=TRUE)
+data_full$steps[nas] <- avg_interval[as.character(data_full$interval[nas])]
+steps_full <- data_full %>%
+  filter(!is.na(steps)) %>%
+  group_by(date) %>%
+  summarize(steps = sum(steps)) %>%
+  print
+## Create histogram of the total number of steps taken each day and calculate and report the mean and median total number of steps taken per da
+ggplot(steps_full, aes(x = steps)) +
+  geom_histogram(fill = "black", binwidth = 1000) +
+  labs(title = "Histogram of Steps per day, including missing values", x = "Steps per day", y = "Frequency")
+##Reporting Mean/Median
+mean_steps_full <- mean(steps_full$steps, na.rm = TRUE)
+median_steps_full <- median(steps_full$steps, na.rm = TRUE)
+
+## Panel plot comparing the average number of steps taken per 5-minute interval across weekdays and weekends
+data_full <- mutate(data_full, weektype = ifelse(weekdays(data_full$date) == "Saturday" | weekdays(data_full$date) == "Sunday", "weekend", "weekday"))
+data_full$weektype <- as.factor(data_full$weektype)
+head(data_full)
+interval_full <- data_full %>%
+  group_by(interval, weektype) %>%
+  summarise(steps = mean(steps))
+##Make a panel plot containing a time series plot
+s <- ggplot(interval_full, aes(x=interval, y=steps, color = weektype)) +
+  geom_line() +
+  facet_wrap(~weektype, ncol = 1, nrow=2)
+print(s)
+```
+```
+```
+
